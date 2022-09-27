@@ -1,5 +1,3 @@
-# Q-team000-sample
-
 ## Basic Information
 
 |   Info      |        Description     |
@@ -19,10 +17,12 @@
 
 |   Info      |        Description     |
 | ----------- | ---------------------- |
-|  Title      |         TBD            |
+|  Title      |         NBA Player Guesser Game            |
 | System URL  |      TBD    |
 | Video Link  |      TBD     |
 
 ## Project Summary
+
+Our application is an NBA game that allows fans to guess the player that satisfies a variety of given criteria, including aggregate player statistics, team wins, and boxscore season highs. By combining different types of stats together, as well as incorporating retired and current NBA players, our game is sure to be enjoyable for all fans who consider themselves NBA historians.
 
 This is a summary of the project!

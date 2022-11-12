@@ -24,12 +24,12 @@ def create_db_connection(host_name, user_name, db_name):
         connection = mysql.connector.connect(
             host=host_name,
             user=user_name,
-            passwd="Aero1Nautical123#",
+            passwd="apple123",
             database=db_name
         )
-        print("MySQL Database connection successful")
+        log.info("MySQL Database connection successful")
     except Error as err:
-        print(f"Error: '{err}'")
+        log.info(f"Error: '{err}'")
 
     return connection
 
@@ -47,7 +47,7 @@ def execute_query_get(connection, query):
 
         # return result
     except Error as err:
-        print(f"Error: '{err}'")
+        log.info(f"Error: '{err}'")
 
 def execute_query_post(connection, query):
     """
@@ -60,13 +60,13 @@ def execute_query_post(connection, query):
         # print("Query successful")
         # return result
     except Error as err:
-        print(f"Error: '{err}'")
+        log.info(f"Error: '{err}'")
 
 def CheckPlayers(df, connection):
     items = df['PLAYER_ID']
     df_items = pd.DataFrame(items, columns=['PlayerId'])
 
-    sql = "select * from PlayerDev;"
+    sql = "select * from Player;"
     df_db = pd.read_sql_query(sql, connection)
     df_db.PlayerId = df_db.PlayerId.astype(str)
 
@@ -84,12 +84,12 @@ def InsertPlayers(new_players, connection):
         data = pd.concat([data,player], axis=0)
 
     for player in list(data.itertuples(index=False, name=None)):
-        player_query = f"""INSERT INTO PlayerDev(PlayerId, FirstName, LastName, Height, Weight)
+        player_query = f"""INSERT INTO Player(PlayerId, FirstName, LastName, Height, Weight)
         VALUES{player}"""
         execute_query_post(connection, player_query)
 
 def SignPlayers(df = None):
-    currentSeason = int(open("../current_season.txt", 'r').readline())
+    currentSeason = int(open("current_season.txt", 'r').readline())
     team_id_start = (currentSeason % 2020) * 30 + 1
 
     all_teams = teams.get_teams()
@@ -117,12 +117,12 @@ def SignPlayers(df = None):
         signing = list(signings)
         signing.append(currentSeason) 
         # print(signing)
-        sign_query = f"""INSERT INTO SignDev(TeamId, PlayerId, Year)
+        sign_query = f"""INSERT INTO Sign(TeamId, PlayerId, Year)
         VALUES{tuple(signing)}"""
         execute_query_post(connection, sign_query)
 
 def InputBoxScoreAndPlayerPlay(boxscores, connection):
-    get_last_boxscore_value_sql = "SELECT * FROM BoxScoreDev ORDER BY BoxScoreId DESC LIMIT 1"
+    get_last_boxscore_value_sql = "SELECT * FROM BoxScore ORDER BY BoxScoreId DESC LIMIT 1"
     last_game_accessed = execute_query_get(connection, get_last_boxscore_value_sql)[0][0] + 1
 
     box_scores = boxscores.drop(['TEAM_ID', 'TEAM_CITY', "TEAM_ABBREVIATION" , 'PLAYER_NAME' ,'NICKNAME',
@@ -134,14 +134,14 @@ def InputBoxScoreAndPlayerPlay(boxscores, connection):
     players_play = boxscores.drop(boxscores.columns.difference(['GAME_ID','PLAYER_ID']), 1)
     players_play.fillna(0, inplace = True)
 
-    box_table = pd.read_sql_query("SELECT * FROM BoxScoreDev;", connection)
+    box_table = pd.read_sql_query("SELECT * FROM BoxScore;", connection)
 
-    print("Adding BoxScore and PlayerPlay")
+    log.info("Adding BoxScore and PlayerPlay")
     pp = list(players_play.itertuples(index=False, name=None))
     boxscore = list(box_scores.itertuples(index=False, name=None))
     for index in tqdm(range(len(pp))):
         # print(pp[index])
-        pp_query = f"""INSERT INTO PlayerPlayDev(GameId, PlayerId)
+        pp_query = f"""INSERT INTO PlayerPlay(GameId, PlayerId)
         VALUES{pp[index]};
         """
         execute_query_post(connection, pp_query)
@@ -150,12 +150,12 @@ def InputBoxScoreAndPlayerPlay(boxscores, connection):
         bs.append(last_game_accessed)
         bs = tuple(bs)
         last_game_accessed += 1
-
+        
         if bs[0] in box_table["BoxScoreId"]:
-            boxScoreQuery = f"""REPLACE INTO BoxScoreDev(GameId, PlayerId, FGM, FGA, TPM, TPA, FTM, FTA, Rebs, Asts, Stls, Blks, TOs, Pts, BoxScoreId)
+            boxScoreQuery = f"""REPLACE INTO BoxScore(GameId, PlayerId, FGM, FGA, TPM, TPA, FTM, FTA, Rebs, Asts, Stls, Blks, TOs, Pts, BoxScoreId)
         VALUES{bs}"""
         else:
-            boxScoreQuery = f"""INSERT INTO BoxScoreDev(GameId, PlayerId, FGM, FGA, TPM, TPA, FTM, FTA, Rebs, Asts, Stls, Blks, TOs, Pts, BoxScoreId)
+            boxScoreQuery = f"""INSERT INTO BoxScore(GameId, PlayerId, FGM, FGA, TPM, TPA, FTM, FTA, Rebs, Asts, Stls, Blks, TOs, Pts, BoxScoreId)
             VALUES{bs}"""
         execute_query_post(connection, boxScoreQuery)
         # break
@@ -163,16 +163,16 @@ def InputBoxScoreAndPlayerPlay(boxscores, connection):
 def UpdateGames(connection):
     """Returns Dataframe with games that are not in the database
     """
-    print("Finding new games...")
-    last_game_accessed_sql =  "SELECT Date FROM GameDev WHERE Date = (SELECT DISTINCT MAX(Date) FROM GameDev) LIMIT 1;" 
+    log.info("Finding new games...")
+    last_game_accessed_sql =  "SELECT Date FROM Game WHERE Date = (SELECT DISTINCT MAX(Date) FROM Game) LIMIT 1;" 
     last_game_accessed = execute_query_get(connection, last_game_accessed_sql)[0][0]
     # game_table = execute_query_get(connection, "SELECT * FROM Game;")
-    game_table = pd.read_sql_query("SELECT * FROM GameDev;", connection)
+    game_table = pd.read_sql_query("SELECT * FROM Game;", connection)
     
     all_games = LeagueGameLog(league_id='00', season_type_all_star="Regular Season", date_from_nullable=last_game_accessed)
     df = all_games.league_game_log.get_data_frame()
     df.drop_duplicates().sort_values(by=['GAME_ID'])
-    print("Acquired Games")
+    log.info("Acquired Games")
 
     data = pd.DataFrame(columns=['GAME_ID', 'GAME_DATE', 'HOME_SCORE', 'AWAY_SCORE', 'HOME_TEAM_ID', 'AWAY_TEAM_ID'])
     for i in range(0, len(df), 2):
@@ -184,19 +184,19 @@ def UpdateGames(connection):
     for game in list(data.itertuples(index=False, name=None)):
         game = list(game)
         if game[0] in game_table["GameId"]:
-            # game_query = f"""REPLACE INTO GameDev(GameId, Date, HomeScore, AwayScore, HomeTeamId, AwayTeamId)
+            # game_query = f"""REPLACE INTO Game(GameId, Date, HomeScore, AwayScore, HomeTeamId, AwayTeamId)
             # VALUES{tuple(game)}"""
-            game_query = f"""UPDATE GameDev 
+            game_query = f"""UPDATE Game 
             SET GameId = {game[0]}, Date = {game[1]}, HomeScore = {game[2]}, AwayScore = {game[3]}, HomeTeamId = {game[4]}, AwayTeamId = {game[5]}
             WHERE GameId = {game[0]};"""
         else:   
-            game_query = f"""INSERT INTO GameDev(GameId, Date, HomeScore, AwayScore, HomeTeamId, AwayTeamId)
+            game_query = f"""INSERT INTO Game(GameId, Date, HomeScore, AwayScore, HomeTeamId, AwayTeamId)
             VALUES{tuple(game)}"""
         execute_query_post(connection, game_query)
     return data
 
 def GetBoxScores(df):
-    print("Getting Box Scores...")
+    log.info("Getting Box Scores...")
     game_ids = df['GAME_ID']
     box_scores = pd.DataFrame()
     for game_id_index in tqdm(range(len(game_ids))):
@@ -212,9 +212,9 @@ def GetBoxScores(df):
 if __name__ == "__main__":
     warnings.filterwarnings("ignore")
     try:
-        print("Starting Update")
-        sys.stdout.flush()
-        connection = create_db_connection("localhost", "root", "PickAndRoll")
+        log.info("Starting Update")
+
+        connection = create_db_connection("34.136.27.137", "root", "PickAndRoll")
         data = UpdateGames(connection)
         boxscores = GetBoxScores(data)
         # boxscores = pd.read_csv("csv/boxscoresv3.csv", index_col = 0)
@@ -222,7 +222,7 @@ if __name__ == "__main__":
         InsertPlayers(newplayers, connection)
         SignPlayers(boxscores)
         InputBoxScoreAndPlayerPlay(boxscores, connection)
-
+        sys.stdout.flush()
         print(f'Update finished: {len(data)} games added!')
 
         

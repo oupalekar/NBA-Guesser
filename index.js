@@ -1,3 +1,4 @@
+const {spawn} = require('child_process');
 var express = require('express');
 var bodyParser = require('body-parser');
 var mysql = require('mysql2');
@@ -113,7 +114,7 @@ app.post('/update', function(req, res) {
 
   python.on('exit', (code) => {
     console.log(`Exited with ${code}: ${dataToSend}`)
-    res.render('index', {update : dataToSend})
+    res.render('index', {update : dataToSend, data: ''})
     // res.write(dataToSend);
 
     // return;
@@ -252,9 +253,31 @@ app.post('/team_wins', function(req, res) {
 });
 
 app.post('/player_max_score', function(req, res) {
-});
+        var name = req.body.player_name;
+        first_last = name.trim().split(" ");
+        var year = req.body.year;
 
-app.post('/update', function(req, res) {
+        var sql_1 = `SELECT p1.PlayerId FROM Player p1 WHERE p1.FirstName = '${first_last[0]}' AND p1.LastName = '${first_last[1]}'`;
+
+        connection.query(sql_1, function(err_1, result_1) {
+                if (err_1) {
+                        res.send(err_1);
+                        return;
+                }
+
+                var player_id = result_1[0]["PlayerId"];
+                var sql_2 = `SELECT g1.Date, g1.HomeScore, g1.AwayScore, g1.HomeTeamId, g1.AwayTeamId, b1.Pts FROM Player p1 JOIN BoxScore b1 USING(PlayerId) JOIN Game g1 USING(GameId) JOIN Team t1 ON(t1.TeamId = g1.HomeTeamId) WHERE t1.Year = ${year} AND p1.PlayerId = ${player_id} AND b1.Pts = (SELECT MAX(b2.Pts) FROM Player p2 JOIN BoxScore b2 USING(PlayerId) JOIN Game g2 USING(GameId) JOIN Team t2 ON (t2.TeamId = g2.HomeTeamId) WHERE p2.PlayerId = ${player_id} AND t2.Year = ${year});`
+
+                connection.query(sql_2, function(err_2, result_2) {
+                        if (err_2) {
+                                res.send(err_2);
+                                return;
+                        }
+
+                        var info = result_2[0];
+                        res.send(info);
+                })
+        })
 });
 
 app.listen(80, function () {

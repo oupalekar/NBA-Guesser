@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Guesser</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    </head>
+    <body>
+        <h1 style="text-align: center;">NBA GUESSER GAME</h1>
+        <div style="display:flex; flex-direction: row; justify-content: center; align-items: center">
+            <div style="margin-right: 25px;">
+                <form action="crud_function" method="POST">
+                    <button type="submit" class="btn btn-primary">Miscellaneous Page</button>
+                </form>
+            </div>
+            <div style="margin-left: 25px;">
+                <form action="prediction_function" method="POST">
+                    <button type="submit" class="btn btn-primary">Predictions Page</button>
+                </form>
+            </div>
+        </div>
+        <div class="container mt-4">
+     <div class="card">
+       <div class="card-body">
+         <h2>Guess the Player!</h2>
+                <h6>[Hint 1] Double-double Rate: <%= double%> </h6>
+                <h6>[Hint 2] Average Stat in <%=year_param%>: <%=stat_param%> <%=value_param%> </h6> 
+           </div>
+         </form>
+   </div>
+</div>
+    </body>
+</html>

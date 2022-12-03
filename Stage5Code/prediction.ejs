@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Predictions</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    </head>
+    <body>
+        <h1 style="text-align: center;">Predictions</h1>
+        <div style="margin-top: 25px;">
+            <h2 style="text-align: center;">How We Are Predicting The Winning Team:</h2>
+            <div style="text-align: center;">
+                <i>We look at all matchups between the two teams, and the team that won more matchups is predicted to win.</i>
+            </div>
+        </div>
+        <div style="margin-top: 25px; text-align: center">
+            <form action="prediction_made" method="POST">
+                <div class="form-group">
+                    <label for="first_team">Add First Team</label>
+                    <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 15px;">
+                        <input type="text" class="form-control col-lg-9" id="first_team" aria-describedby="emailHelp" placeholder="Enter Team Name" name="first_team">
+                    </div>
+                    <label for="second_team">Add Second Team</label>
+                    <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 15px;">
+                        <input type="text" class="form-control col-lg-9" id="second_team" aria-describedby="emailHelp" placeholder="Enter Team Name" name="second_team">
+                    </div>
+                    <label for="year">Add Year To Pull Data</label>
+                    <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 15px;">
+                        <input type="text" class="form-control col-lg-9" id="year" aria-describedby="emailHelp" placeholder="Enter Year" name="year">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Submit</button>
+                <div>
+                    <br></br>
+                    <h6> <%= output %> </h6>
+                </div>
+            </form>
+        </div>
+    </body>
+</html>

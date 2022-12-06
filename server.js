@@ -1,4 +1,4 @@
-onst {spawn} = require('child_process');
+const {spawn} = require('child_process');
 var express = require('express');
 var bodyParser = require('body-parser');
 var mysql = require('mysql2');
@@ -7,7 +7,8 @@ var connection = mysql.createConnection({
                 host: '34.136.27.137',
                 user: 'root',
                 password: 'apple123',
-                database: 'PickAndRoll'
+                database: 'PickAndRoll',
+                multipleStatements: true
 });
 
 connection.connect;
@@ -28,39 +29,60 @@ app.get('/', function(req, res) {
   var player_id;
   const game = spawn('python3', ['game.py']);
   game.stdout.on('data', (data) => {
-    console.log(data.toString());
+    // console.log(data.toString());
     var player_id = data.toString().split('\n')[1];
     var stat = data.toString().split('\n')[2];
     var stat_value = data.toString().split('\n')[3];
     var year = data.toString().split('\n')[4];
+    var team_wins = data.toString().split('\n')[5];
+    var max_pts = data.toString().split('\n')[6];
     var name_sql = `SELECT FirstName, LastName FROM Player WHERE PlayerID = ${player_id};`;
     console.log(name_sql)    
-connection.query(name_sql, (err, result) => {
-    if (err){throw err;}        
-console.log(result[0]['FirstName'], result[0]['LastName']);    
+    connection.query(name_sql, (err, result) => {
+      if (err){throw err;}        
+      console.log(result[0]['FirstName'], result[0]['LastName']);    
       var query = `call DoubleDoubleRate("${result[0]['FirstName']}", "${result[0]['LastName']}");`
-   console.log(query);
-  connection.query(query, function(err, result){
-    if(err){
+      console.log(query);
+      global.hints = {first_name: result[0]['FirstName'], last_name: result[0]['LastName'], player_id: player_id, stat_param: stat, value_param : stat_value, year_param: year, team_wins_param: team_wins, max_pts_param: max_pts, guesses: 5, correct: false, lose : false}
+      connection.query(query, function(err, result){
+      if(err){
         console.log(err)
-    }
-    console.log(result[0])
-    var rate = result[0][0]['percentage']
-    res.render('guesser', {double : rate, year_param: year, stat_param: stat, value_param: stat_value});
+      }
+      console.log(result[0])
+      var rate = result[0][0]['percentage']
+      global.hints.double = rate;
+    res.render('guesser', global.hints);
     })
-
-
-    });
-
+  });
+});
 });
 
-  game.stderr.on('data', function(data) {
-     console.log(`stderr: ${data}`)
-   });
-    console.log(player_id)
-
-  //res.render('index', { data: '', update: '' });
+app.post('/', function(req, res) {
+  var player_name = req.body.player_name.split(' ')
+  var first_name = player_name[0]
+  if (player_name.length == 3) {
+    var last_name = player_name[1] + " " + player_name[2]
+  } else {
+    var last_name = player_name[1]
+  }
+  console.log(player_name, first_name, last_name, global.hints.first_name, global.hints.last_name)
+  console.log(first_name == global.hints.first_name)
+  console.log(last_name == global.hints.last_name)
+  if (first_name == global.hints.first_name && last_name == global.hints.last_name) {
+    console.log("In True")
+    global.hints.correct = true
+  }
+  // console.log(global.hints[guesses])
+  if (global.hints.guesses > 0) {
+    global.hints.guesses = global.hints.guesses - 1
+  }
+  
+  if (global.hints.guesses == 0) {
+    global.hints.lose = true
+  }
+  res.render('guesser', global.hints)
 });
+
 
 app.get('/success', function(req, res) {
          res.send({'message': ""});
@@ -355,21 +377,34 @@ app.post('/prediction_made', function(req, res) {
             var second_team_id = result_2[0]["TeamId"];
             console.log(second_team_id);
 
-            var sp = `CALL ChooseWinner(${first_team_id}, ${second_team_id})`;
-            connection.query(sp, function(err_3, result_3) {
+            var sp = `CALL ChooseWinner(${first_team_id}, ${second_team_id});`;
+            var t1_wins = `SELECT COUNT(*) FROM (SELECT g1.GameId FROM Team t1 JOIN Game g1 ON(t1.TeamId = g1.HomeTeamId) WHERE (g1.HomeScore > g1.AwayScore AND g1.HomeTeamId = ${first_team_id} AND t1.Year = ${year}) UNION SELECT g2.GameId FROM Team t2 JOIN Game g2 ON(t2.TeamId = g2.AwayTeamId) WHERE (g2.AwayScore > g2.HomeScore AND g2.AwayTeamId = ${first_team_id} AND t2.Year = ${year})) AS winning_games;`;
+            var t2_wins = `SELECT COUNT(*) FROM (SELECT g1.GameId FROM Team t1 JOIN Game g1 ON(t1.TeamId = g1.HomeTeamId) WHERE (g1.HomeScore > g1.AwayScore AND g1.HomeTeamId = ${second_team_id} AND t1.Year = ${year}) UNION SELECT g2.GameId FROM Team t2 JOIN Game g2 ON(t2.TeamId = g2.AwayTeamId) WHERE (g2.AwayScore > g2.HomeScore AND g2.AwayTeamId = ${second_team_id} AND t2.Year = ${year})) AS winning_games;`;
+            var t1_pts = `SELECT SUM(scores.score) FROM ((SELECT SUM(g1.HomeScore) AS score FROM Game g1 WHERE g1.HomeTeamId = ${first_team_id}) UNION (SELECT SUM(g1.AwayScore) AS score FROM Game g1 WHERE g1.AwayTeamId = ${first_team_id})) AS scores;`;
+            var t2_pts = `SELECT SUM(scores.score) FROM ((SELECT SUM(g1.HomeScore) AS score FROM Game g1 WHERE g1.HomeTeamId = ${second_team_id}) UNION (SELECT SUM(g1.AwayScore) AS score FROM Game g1 WHERE g1.AwayTeamId = ${second_team_id})) AS scores;`;
+            var t1_opp_pts = `SELECT SUM(scores.score) FROM ((SELECT SUM(g1.AwayScore) AS score FROM Game g1 WHERE g1.HomeTeamId = ${first_team_id}) UNION (SELECT SUM(g1.HomeScore) AS score FROM Game g1 WHERE g1.AwayTeamId = ${first_team_id})) AS scores;`;
+            var t2_opp_pts = `SELECT SUM(scores.score) FROM ((SELECT SUM(g1.AwayScore) AS score FROM Game g1 WHERE g1.HomeTeamId = ${second_team_id}) UNION (SELECT SUM(g1.HomeScore) AS score FROM Game g1 WHERE g1.AwayTeamId = ${second_team_id})) AS scores;`;
+            connection.query(sp + t1_wins + t2_wins + t1_pts + t2_pts + t1_opp_pts + t2_opp_pts, function(err_3, result_3) {
                 if (err_3) {
                     res.send(err_3)
                     return;
                 }
                 console.log(result_3);
-                var num = result_3[0][0]['team1_wins'];
-                var winner = first_team;
-                var percentage = result_3[0][0]['team1_average'] * 100;
-                if (num == 0) {
-                    winner = second_team;
-                    percentage = 100 - percentage;
-                }
-                output = `Based on ${year} matchups between ${first_team} and ${second_team}, we predict that ${winner} wins! They won ${percentage}% of head-to-head matchups!`;
+                var h2h_winner = result_3[0][0]['team1_wins'];
+                var total_winner = result_3[2][0]['COUNT(*)'] > result_3[3][0]['COUNT(*)'] ? 1 : 0;
+                var pt_diff_winner = result_3[4][0]['SUM(scores.score)'] - result_3[6][0]['SUM(scores.score)'] > result_3[5][0]['SUM(scores.score)'] - result_3[7][0]['SUM(scores.score)'] ? 1 : 0;
+                console.log(h2h_winner);
+                console.log(total_winner);
+                console.log(pt_diff_winner);
+                var t1_score = h2h_winner * 0.4 + total_winner * 0.3 + pt_diff_winner * 0.3;
+                var t2_score = 1 - t1_score;
+                var winner = t1_score > 0.5 ? first_team : second_team;
+                //var percentage = result_3[0][0]['team1_average'] * 100;
+                //if (num == 0) {
+                  //  winner = second_team;
+                   // percentage = 100 - percentage;
+                //}
+                output = `Based on ${year} data, we predict that ${winner} wins! Our model gives ${first_team} a score of ${t1_score} and ${second_team} a score of ${t2_score}.`;
                 res.render('prediction', {output: output, year: year, first_team_name: first_team, second_team_name: second_team});
             })
         })

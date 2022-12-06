@@ -24,8 +24,18 @@
      <div class="card">
        <div class="card-body">
          <h2>Guess the Player!</h2>
-                <h6>[Hint 1] Double-double Rate: <%= double%> </h6>
-                <h6>[Hint 2] Average Stat in <%=year_param%>: <%=stat_param%> <%=value_param%> </h6> 
+         <h6>[Hint 1] Double-double Rate: <%= double%> </h6>
+         <h6>[Hint 2] Average Stat in <%=year_param%>: <%=stat_param%> <%=value_param%> </h6> 
+         <h6>[Hint 3] Max Points in <%=year_param%> : <%=max_pts_param%> points</h6>
+         <h6>[Hint 4] Player's team wins in <%=year_param%> : <%=team_wins_param%> wins</h6>
+                <form action="" method="POST">
+                  <div class="form-group">
+                    <input type="text" class="form-control col-lg-9" id="player_name" aria-describedby="emailHelp" placeholder="Enter player name" name="player_name">
+                  </div>
+                  <button type="submit" class="btn btn-primary">You have <%=guesses%> guesses left </button>
+                </form>
+            <h6> <%= correct ? 'You win!' : ""%> </h6>
+            <h6> <%= lose ? 'You lost! The player was ' + first_name + ' ' + last_name : ""%> </h6>
            </div>
          </form>
    </div>

@@ -1,5 +1,5 @@
 # Link to Video
-[Link to video in repo](docs/FinalProjectVideo.mp4)
+[Link to video in repo](FinalProjectVideo.mp4)
 
 In case the above link does not work:
 

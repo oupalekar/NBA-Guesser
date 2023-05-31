@@ -1,4 +1,4 @@
-##A Wordle Style NBA Guesser Game
+## A Wordle Style NBA Guesser Game
 
 Interested in the NBA? Want a game to satisfy your basketball brain's needs? Play NBA-Guesser!
 
